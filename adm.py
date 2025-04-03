@@ -32,7 +32,7 @@ def puxarusuarios():
     conexao = conectarbanco()
     if conexao:
         cursor = conexao.cursor()
-        cursor.execute("SELECT id, `Nome/Empresa`, usuario, senha, numero, permissao FROM usuarios ORDER BY id ASC")
+        cursor.execute("SELECT id, `NomeEmpresa`, usuario, senha, numero, permissao FROM usuarios ORDER BY id ASC")
         usuarios = cursor.fetchall()
         conexao.close()
         return usuarios
@@ -58,7 +58,7 @@ def atualizacaousuarios(user_id, nome_empresa, usuario, senha, numero, permissao
             return False
 
         cursor.execute(
-            "UPDATE usuarios SET `Nome/Empresa` = %s, usuario = %s, senha = %s, numero = %s, permissao = %s WHERE id = %s",
+            "UPDATE usuarios SET `NomeEmpresa` = %s, usuario = %s, senha = %s, numero = %s, permissao = %s WHERE id = %s",
             (nome_empresa, usuario, senha, numero, permissao, user_id)
         )
         conexao.commit()
@@ -95,7 +95,7 @@ def novousuario(nome_empresa, usuario, senha, numero, permissao):
             return False
 
         cursor.execute(
-            "INSERT INTO usuarios (`Nome/Empresa`, usuario, senha, numero, permissao) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO usuarios (`NomeEmpresa`, usuario, senha, numero, permissao) VALUES (%s, %s, %s, %s, %s)",
             (nome_empresa, usuario, senha, numero, permissao)
         )
         conexao.commit()
@@ -113,7 +113,7 @@ def formularionovousuario():
     st.subheader("Adicionar Novo Usuário")
 
     with st.form(key="formnovousuario"):
-        nome_empresa = st.text_input("Nome/Empresa", max_chars=50)
+        nome_empresa = st.text_input("NomeEmpresa", max_chars=50)
         usuario = st.text_input("Usuário", max_chars=20)
         senha = st.text_input("Senha", type="password", max_chars=30)
         numero = st.text_input("Número", max_chars=15)
@@ -139,7 +139,7 @@ def formularioeditarusuario(user):
     st.subheader(f"Editar Usuário: {user[1]}")
 
     with st.form(key=f"editarusuario{user[0]}"):
-        nome_empresa = st.text_input("Nome/Empresa", value=user[1], max_chars=50)
+        nome_empresa = st.text_input("NomeEmpresa", value=user[1], max_chars=50)
         usuario = st.text_input("Usuário", value=user[2], max_chars=20)
         senha = st.text_input("Senha", value=user[3], type="password", max_chars=30)
         numero = st.text_input("Número", value=user[4], max_chars=15)
