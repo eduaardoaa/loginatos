@@ -35,7 +35,7 @@ def validacao(usr, passw):
         st.session_state.authenticated = True  
         st.session_state.user_info = {
             'id': user['id'],
-            'nome': user['Nome/Empresa'],
+            'nome': user['NomeEmpresa'],
             'permissao': user['permissao']
         }
         st.success('Login feito com sucesso!')
