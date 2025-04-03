@@ -1,8 +1,7 @@
-# main.py
 import mysql.connector
 import streamlit as st
-from adm import show_admin_page
-from dashboard import show_dashboard_page
+from adm import paginaadm
+from dashboard import dashboardcliente
 
 def conexaobanco():
     try:
@@ -52,7 +51,7 @@ def validacao(usr, passw):
     else:
         st.error('Usuário ou senha incorretos, tente novamente.')
 
-def show_login_page():
+def arealogin():
     st.set_page_config(page_title="Login", page_icon="🔒", layout="centered")
     
     col1, col2, col3 = st.columns([3, 2, 3])
@@ -74,13 +73,13 @@ def main():
         st.session_state.authenticated = False
     
     if not st.session_state.authenticated:
-        show_login_page()
+        arealogin()
     else:
         if "page" in st.session_state:
             if st.session_state.page == "adm":
-                show_admin_page()
+                paginaadm()
             elif st.session_state.page == "dashboard":
-                show_dashboard_page()
+                dashboardcliente()
 
 if __name__ == "__main__":
     main()
