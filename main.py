@@ -7,12 +7,12 @@ from dashboard import show_dashboard_page
 def conexaobanco():
     try:
         conn = mysql.connector.connect(
-            host="localhost",
-            port=3306,
-            user="root",
-            password="dudu2305",
-            database="atoscapital"
-        )
+            host="crossover.proxy.rlwy.net",
+             port=17025,
+             user="root",
+             password="nwiMDSsxmcmDXWChimBQOIswEFlTUMms",
+             database="railway"
+         )
         return conn
     except mysql.connector.Error as e:
         st.error(f"Erro ao conectar ao banco de dados: {e}")
