@@ -8,7 +8,7 @@ def verificar_permissao():
         st.rerun()
     
     if st.session_state.user_info.get('permissao') != 'adm':
-        st.error("Acesso negado: Permissão insuficiente!")
+        st.error("Acesso negado: Você não tem permissão para acessar essa pagina!")
         st.session_state.authenticated = False
         st.session_state.user_info = None
         st.session_state.page = None
