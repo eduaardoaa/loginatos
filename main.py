@@ -1,17 +1,16 @@
 import mysql.connector
 import streamlit as st
-from adm import paginaadm
-from dashboard import dashboardcliente
+import importlib
 
 def conexaobanco():
     try:
         conn = mysql.connector.connect(
-            host="crossover.proxy.rlwy.net",
-             port=17025,
-             user="root",
-             password="nwiMDSsxmcmDXWChimBQOIswEFlTUMms",
-             database="railway"
-         )
+            host="localhost",
+            port=3306,
+            user="root",
+            password="dudu2305",
+            database="atoscapital"
+        )
         return conn
     except mysql.connector.Error as e:
         st.error(f"Erro ao conectar ao banco de dados: {e}")
@@ -24,7 +23,12 @@ def validacao(usr, passw):
 
     cursor = conn.cursor(dictionary=True)
 
-    query = "SELECT * FROM usuarios WHERE usuario = %s AND senha = %s"
+    query = """
+    SELECT u.*, g.codigo as grupo_codigo 
+    FROM usuarios u
+    LEFT JOIN grupoempresa g ON u.grupo_id = g.id
+    WHERE u.usuario = %s AND u.senha = %s
+    """
     cursor.execute(query, (usr, passw))
     user = cursor.fetchone()
 
@@ -35,8 +39,10 @@ def validacao(usr, passw):
         st.session_state.authenticated = True  
         st.session_state.user_info = {
             'id': user['id'],
-            'nome': user['NomeEmpresa'],
-            'permissao': user['permissao']
+            'nome': user['Nome'],
+            'permissao': user['permissao'],
+            'grupo_id': user.get('grupo_id'),
+            'grupo_codigo': user.get('grupo_codigo', '')
         }
         st.success('Login feito com sucesso!')
 
@@ -44,8 +50,14 @@ def validacao(usr, passw):
             st.session_state.page = "adm"
             st.rerun()
         elif user['permissao'] == 'cliente':
-            st.session_state.page = "dashboard"
-            st.rerun()
+            if user.get('grupo_codigo'):
+                codigo_grupo = user['grupo_codigo'].lower().strip()
+                
+                st.session_state.page = "dashboard"
+                st.session_state.dashboard_page = f"pagina{codigo_grupo}"
+                st.rerun()
+            else:
+                st.error('Usuário não está associado a nenhum grupo válido.')
         else:
             st.error('Permissão desconhecida. Não foi possível redirecionar.')
     else:
@@ -68,6 +80,29 @@ def arealogin():
     if botaoentrar:
         validacao(username, password)
 
+def carregar_pagina(nome_pagina):
+    try:
+        if nome_pagina == "dashboard":
+            modulo = importlib.import_module("dashboard")
+            pagina = st.session_state.get('dashboard_page', 'paginaatos')
+            
+            if hasattr(modulo, pagina):
+                getattr(modulo, pagina)()
+            else:
+                st.error(f'Dashboard para este grupo não está disponível. Entre em contato com o suporte.')
+                if st.button("Voltar"):
+                    st.session_state.authenticated = False
+                    st.session_state.page = None
+                    st.rerun() 
+        else:
+            modulo = importlib.import_module(nome_pagina)
+            if hasattr(modulo, f'pagina{nome_pagina}'):
+                getattr(modulo, f'pagina{nome_pagina}')()
+            else:
+                st.error(f'Página {nome_pagina} não possui a função esperada')
+    except ImportError as e:
+        st.error(f'Erro ao carregar módulo: {e}')
+
 def main():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -77,9 +112,9 @@ def main():
     else:
         if "page" in st.session_state:
             if st.session_state.page == "adm":
-                paginaadm()
-            elif st.session_state.page == "dashboard":
-                dashboardcliente()
+                carregar_pagina("adm")
+            else:
+                carregar_pagina(st.session_state.page)
 
 if __name__ == "__main__":
     main()
