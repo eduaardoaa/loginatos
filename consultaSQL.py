@@ -1,4 +1,4 @@
-#Conxão com o banco
+# Conexão com o banco
 import calendar
 from datetime import datetime
 from matplotlib.dates import relativedelta
@@ -266,7 +266,6 @@ def obter_acumulo_meta_ano_anterior(filial):
         return None
     finally:
         conn.close()
-
 
 def obter_acumulo_de_vendas(filial):
     """Obtém o acúmulo de vendas do mês atual para uma filial específica.
@@ -617,4 +616,166 @@ def obter_vendas_anual_e_filial(filial_selecionada):
         return {}
     finally:
         conn.close()
+
+def obter_vendas_ano_anterior_mes_anterior(filial, mes, ano):
+    """Executa a consulta para obter o total de vendas do mesmo período do ano anterior para a filial especificada."""
+    conn = obter_conexao()
+    if conn is None:
+        return None
+
+    try:
+        cursor = conn.cursor()
+        consulta = '''
+        SELECT SUM(vlVenda) AS total_vendas_ano_anterior
+        FROM tbVendasDashboard
+        WHERE YEAR(dtVenda) = ? 
+          AND MONTH(dtVenda) = ?
+          AND nmFilial = ?
+        '''
+        cursor.execute(consulta, (ano, mes, filial))
+        resultado = cursor.fetchone()
+        if resultado and resultado.total_vendas_ano_anterior is not None:
+            return resultado.total_vendas_ano_anterior
+        else:
+            return 0
+    except pyodbc.Error as e:
+        print(f"Erro ao executar a consulta: {e}")
+        return None
+    finally:
+        conn.close()
+
+def obter_meta_mes_anterior(filial, mes, ano):
+    """
+    Obtém a meta de vendas: soma de vlVenda do mês e ano anteriores ao informados,
+    com acréscimo de 5%.
+    """
+    conn = obter_conexao()
+    if conn is None:
+        return None
+
+    try:
+        cursor = conn.cursor()
+
+        consulta = '''
+        SELECT SUM(vlVenda) * 1.05 AS meta_mes
+        FROM tbVendasDashboard
+        WHERE YEAR(dtVenda) = ?
+          AND MONTH(dtVenda) = ?
+          AND nmFilial = ?
+        '''
+
+        ano_anterior = ano - 1
+        cursor.execute(consulta, (ano_anterior, mes, filial))
+        resultado = cursor.fetchone()
+
+        if resultado and resultado.meta_mes is not None:
+            return resultado.meta_mes
+        else:
+            return 0
+
+    except pyodbc.Error as e:
+        print(f"Erro ao executar a consulta: {e}")
+        return None
+    finally:
+        conn.close()
+
+def obter_vendas_mes_anterior(filial, mes, ano):
+    """Executa a consulta para obter o total de vendas do mês e ano especificados para a filial."""
+    conn = obter_conexao()
+    if conn is None:
+        return None
+
+    try:
+        cursor = conn.cursor()
+
+        consulta = '''
+        SELECT SUM(vlVenda) AS total_vendas_mes_atual
+        FROM tbVendasDashboard
+        WHERE YEAR(dtVenda) = ?
+          AND MONTH(dtVenda) = ?
+          AND nmFilial = ?
+        '''
+
+        cursor.execute(consulta, (ano, mes, filial))
+        resultado = cursor.fetchone()
+
+        if resultado and resultado.total_vendas_mes_atual is not None:
+            return resultado.total_vendas_mes_atual
+        else:
+            return 0
+
+    except pyodbc.Error as e:
+        print(f"Erro ao executar a consulta: {e}")
+        return None
+    finally:
+        conn.close()
+
+def obter_vendas_por_mes_e_filial(mes_referencia, filial_selecionada, ano_selecionado):
+    nomes_para_numeros = {
+        "Janeiro": "01", "Fevereiro": "02", "Março": "03", "Abril": "04",
+        "Maio": "05", "Junho": "06", "Julho": "07", "Agosto": "08",
+        "Setembro": "09", "Outubro": "10", "Novembro": "11", "Dezembro": "12"
+    }
+
+    if not (mes_referencia and filial_selecionada):
+        return []
+
+    ano_anterior = ano_selecionado - 1
+    resultados_totais = []
+
+    conn = obter_conexao()
+    if conn is None:
+        return []
+
+    try:
+        cursor = conn.cursor()
+
+        for mes_nome in mes_referencia:
+            mes_num = int(nomes_para_numeros[mes_nome])
+            ultimo_dia = calendar.monthrange(ano_selecionado, mes_num)[1]
+
+            # Ano selecionado
+            data_inicio_atual = f"{ano_selecionado}-{mes_num:02d}-01"
+            data_fim_atual = f"{ano_selecionado}-{mes_num:02d}-{ultimo_dia}"
+
+            query = """
+                SELECT vlVenda, dtVenda, ? as mes_nome, ? as ano
+                FROM tbVendasDashboard
+                WHERE dtVenda BETWEEN ? AND ?
+                AND nmFilial = ?
+                ORDER BY dtVenda
+            """
+            cursor.execute(query, (mes_nome, ano_selecionado, data_inicio_atual, data_fim_atual, filial_selecionada))
+            resultados_totais.extend(cursor.fetchall())
+
+            # Ano anterior
+            data_inicio_anterior = f"{ano_anterior}-{mes_num:02d}-01"
+            data_fim_anterior = f"{ano_anterior}-{mes_num:02d}-{calendar.monthrange(ano_anterior, mes_num)[1]}"
+
+            cursor.execute(query, (mes_nome, ano_anterior, data_inicio_anterior, data_fim_anterior, filial_selecionada))
+            resultados_totais.extend(cursor.fetchall())
+
+        return resultados_totais
+
+    except pyodbc.Error as e:
+        print(f"Erro: {e}")
+        return []
+    finally:
+        conn.close()
+
+def obter_anos_disponiveis():
+    """Retorna uma lista de anos distintos presentes no banco de dados, ordenados em ordem crescente."""
+    conn = obter_conexao()
+    if conn is None:
+        return []
     
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT DISTINCT YEAR(dtVenda) AS ano FROM tbVendasDashboard ORDER BY ano ASC;')  # Mudei para ASC
+        anos = [row.ano for row in cursor]
+        return anos
+    except pyodbc.Error as e:
+        print(f"Erro ao executar a consulta: {e}")
+        return []
+    finally:
+        conn.close()
